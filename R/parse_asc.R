@@ -8,25 +8,21 @@
 #' @export
 
 parse_asc <- function(dirList, homeDir = "./", overwriteBlinks = FALSE, cutPreview = 0) {
-  for (myDir in dirList)
-  {
+  for (myDir in dirList) {
     myPP = myDir
     cat("\nworking on:", myDir, "\n")
     #extract numbers out of participant ID
-    myID =regmatches(myDir,gregexpr('[0-9]+',myDir)) %>% unlist()
+    myID =regmatches(myDir,gregexpr('[A-Za-z]+',myDir)) %>% unlist()
     myDir = paste0(homeDir, myDir)
     hasFile = dir(myDir, pattern = ".asc")
-    if (length(hasFile) != 1)
-    {
+    if (length(hasFile) != 1) {
       cat("Warning: No asc file found in directory: ", myDir, "\n")
 
-    }else
-    {
+    } else {
       #read in file ----
       myFile = paste0(myDir, "/", myPP, ".asc")
       myData = read.table(myFile, fill= T, header = F)
       messages = subset(myData, V1 == "MSG")
-
 
       #correct messages with a time offset ----
 
@@ -37,21 +33,21 @@ parse_asc <- function(dirList, homeDir = "./", overwriteBlinks = FALSE, cutPrevi
         x_isNum = !is.na(x_num)
       }
 
-      thirdIsNumber = check.numeric(messages$V3)
-      for (i in 1:nrow(messages))
-      {
-        temp = messages[i,]
-        if (thirdIsNumber[i])
-        {
-          messages[i,2] = as.numeric(temp$V2) - as.numeric(temp$V3)
-          messages[i,3] = messages[i,4]
-        }
-      }
+      # thirdIsNumber = check.numeric(messages$V3)
+      # for (i in 1:nrow(messages))
+      # {
+      #   temp = messages[i,]
+      #   if (thirdIsNumber[i])
+      #   {
+      #     messages[i,2] = as.numeric(temp$V2) - as.numeric(temp$V3)
+      #     messages[i,3] = messages[i,4]
+      #   }
+      # }
 
-      #generate an overview of the messsages and trial variables present ----
+      #generate an overview of the messages and trial variables present ----
       messageOverview = sort(table(messages$V3), decreasing = T)
       varDF = subset(messages, V4 == "TRIAL_VAR")
-      varOverview = sort(table(varDF$V5))
+      varOverview = sort(table(varDF$V6))
       write.table(messageOverview, paste0(myDir, "/", "overview_", myID,".txt"), row.names = F)
       write.table(varOverview, paste0(myDir, "/", "Var_overview_", myID,".txt"), row.names = F)
 
