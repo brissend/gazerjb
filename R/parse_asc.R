@@ -57,12 +57,39 @@ parse_asc <- function(dirList, homeDir = "./", overwriteBlinks = FALSE, cutPrevi
       #header is time	trial	ID	subject	pupil	x	y
       myOutFile = gsub(".asc","_vwp.csv",myFile)
 
-      #initialize variables
+      # create saccade file
+      mySaccFile = gsub(".asc","_saccade.csv",myFile)
+      
+      # create fixation file
+      myFixFile = gsub(".asc", "_fixation.csv",myFile)
+
+      #initialize gaze variables
       time = NULL
       x = NULL
       y = NULL
       time = NULL
       pupil = NULL
+
+      # saccade variables
+      onset = NULL
+      offset = NULL
+      duration = NULL
+      startx = NULL
+      starty = NULL
+      endx = NULL
+      endy = NULL
+      amplitude = NULL
+      peak_velocity = NULL
+      blink = NULL
+      blinkbool = FALSE
+      
+      # fixation variables
+      fixstart = NULL
+      fixend = NULL
+      fixduration = NULL
+      avgx = NULL
+      avgy = NULL
+      avgpupil = NULL
 
       #is the first variable a number?
       is_data_point = grepl("^\\d+$",myData$V1)
@@ -90,9 +117,11 @@ parse_asc <- function(dirList, homeDir = "./", overwriteBlinks = FALSE, cutPrevi
           #add header for first trial
           if (trial == 1){
             cat("time,trial,ID,subject,pupil,x,y\n", file = myOutFile)
+            cat("trial,ID,subject,onset,offset,duration,startx,starty,endx,endy,amplitude,peak_velocity,blink\n", file = mySaccFile)
+            cat("trial,ID,subject,onset,offset,duration,x,y,pupil\n", file = myFixFile)
           }
         }
-        if (thisRow$V3 == "TRIAL_RESULT")
+        if (thisRow$V3 == "END") # changed from if (thisRow$V3 == "TRIAL_RESULT"); TRIAL_RESULT doesn't always exist
         {
           #wrap up trial if it is trial result
           x = suppressWarnings(as.numeric(x))
@@ -131,14 +160,75 @@ parse_asc <- function(dirList, homeDir = "./", overwriteBlinks = FALSE, cutPrevi
           {
             thisTrial  = data.frame(time, trial, ID = myID, subject = myPP, pupil, x, y)
           }
-          if (cutPreview > 0)
-          { thisTrial = subset(thisTrial, time > cutPreview) }
+          
+          # create saccade data frame for current trial
+          if (!is.null(onset)) { # check there were any saccades during the current trial
+            thisTrialSaccade = data.frame(trial,
+                                          ID = myID,
+                                          subject = myPP,
+                                          onset,
+                                          offset,
+                                          duration,
+                                          startx,
+                                          starty,
+                                          endx,
+                                          endy,
+                                          amplitude,
+                                          peak_velocity,
+                                          blink)
+          }
+
+          # create fixation data frame for current trial
+          if (!is.null(fixduration)) { # check if there were fixations for current trial (likely)
+            thisTrialFixation = data.frame(trial,
+                                          ID = myID,
+                                          subject = myPP,
+                                          fixstart,
+                                          fixend,
+                                          fixduration,
+                                          avgx,
+                                          avgy,
+                                          avgpupil)
+          }
+
+          if (cutPreview > 0) { 
+            thisTrial = subset(thisTrial, time > cutPreview) 
+            if (!is.null(onset)) thisTrialSaccade = subset(thisTrialSaccade,onset > cutPreview) 
+            if (!is.null(fixduration)) thisTrialFixation = subset(thisTrialFixation, onset > cutPreview)
+          }
           fwrite(thisTrial, file= myOutFile, sep=",", append=TRUE , row.names=FALSE, col.names=FALSE)
+
+          if (!is.null(onset)) fwrite(thisTrialSaccade, file = mySaccFile, sep=",", append=TRUE, row.names=FALSE, col.names=FALSE) 
+          if (!is.null(fixduration)) fwrite(thisTrialFixation, file = myFixFile, sep=",", append=TRUE, row.names=FALSE, col.names=FALSE)
+
+          # reset gaze variables
           time = NULL
           x = NULL
           y = NULL
           time = NULL
           pupil = NULL
+
+         # reset saccade variables
+          onset = NULL
+          offset = NULL
+          duration = NULL
+          startx = NULL
+          starty = NULL
+          endx = NULL
+          endy = NULL
+          amplitude = NULL
+          peak_velocity = NULL
+          blink = NULL
+          blinkbool = FALSE
+          
+          # reset fixation variables
+          fixstart = NULL
+          fixend = NULL
+          fixduration = NULL
+          avgx = NULL
+          avgy = NULL
+          avgpupil = NULL
+
         }
         if (is_data_point[i])
         {
@@ -147,8 +237,34 @@ parse_asc <- function(dirList, homeDir = "./", overwriteBlinks = FALSE, cutPrevi
           y = c(y, thisRow$V3)
           pupil = c(pupil,thisRow$V4)
         }
+        
+        # check for blinks within saccade
+        if (thisRow$V1 == 'EBLINK') blinkbool = TRUE
+        
+        # saccade (ADDED)
+        if (thisRow$V1 == 'ESACC') {
+          onset = c(onset,as.numeric(thisRow$V3) - zero_time)
+          offset = c(offset, as.numeric(thisRow$V4) - zero_time)
+          duration = c(duration,thisRow$V5)
+          startx = c(startx,thisRow$V6)
+          starty = c(starty, thisRow$V7)
+          endx = c(endx, thisRow$V8)
+          endy = c(endy, thisRow$V9)
+          amplitude = c(amplitude, thisRow$V10)
+          peak_velocity = c(peak_velocity,thisRow$V11)
+          blink = c(blink,blinkbool)
+          blinkbool = FALSE # set back to false for next saccade
+        }
+        
+        if (thisRow$V1 == 'EFIX') {
+          fixstart = c(fixstart,as.numeric(thisRow$V3) - zero_time)
+          fixend = c(fixend, as.numeric(thisRow$V4) - zero_time)
+          fixduration = c(fixduration,thisRow$V5)
+          avgx = c(avgx,thisRow$V6)
+          avgy = c(avgy,thisRow$V7)
+          avgpupil = c(avgpupil,thisRow$V8)
+        }
       }#end of loop through lines of asc file
     }
   }#end loop for directories
-
 }
