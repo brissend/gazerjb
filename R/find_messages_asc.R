@@ -21,7 +21,7 @@ find_messages_asc <- function(dirList, homeDir = "./",
   {
     myPP= myDir
     myDir1 = paste0(homeDir,myDir)
-    myID =regmatches(myDir,gregexpr('[0-9]+',myDir)) %>% unlist()
+    myID =regmatches(myDir,gregexpr('[A-Za-z]+',myDir)) %>% unlist()
 
     hasFile = dir(myDir1, pattern = "asc")
     if (length(hasFile) != 1)
@@ -33,13 +33,16 @@ find_messages_asc <- function(dirList, homeDir = "./",
     {
       #read in file ----
       myFile = paste0(myDir1, "/", myPP, ".asc")
-      myData = read.table(myFile, fill= T, header = F)
+      myData = read.table(myFile, fill= T, header = F,stringsAsFactors = F)
       messages = subset(myData, V1 == "MSG")
 
       #parse by trial
       trialStarts    = grep("TRIALID", messages$V3)
       trialEnds      = grep("TRIAL_RESULT", messages$V3)
-
+      if (length(trialEnds) == 0) { # if TRIAL_RESULT not recorded
+        trialEnds = trialStarts - 1
+        trialEnds = c(trialEnds[-1],nrow(messages))
+      }
 
 
 
@@ -111,7 +114,11 @@ find_messages_asc <- function(dirList, homeDir = "./",
         thisTrial = messages[ trialStarts[t]:trialEnds[t],  ]
         thisVars  = subset(thisTrial, V4 == "TRIAL_VAR")
         trialResultLine = subset(thisTrial, V3 == "TRIAL_RESULT")
-        msg.df[t, "TRIAL_RESULT"] = trialResultLine$V4
+        if (nrow(trialResultLine) > 0) {
+          msg.df[t, "TRIAL_RESULT"] = trialResultLine$V4
+        } else {
+          msg.df[t,"TRIAL_RESULT"] = 1 # if TRIAL_RESULT not recorded just default to 1
+        }
 
         #full messsages to extract ----
         for (v in 1:length(msg2extract))
