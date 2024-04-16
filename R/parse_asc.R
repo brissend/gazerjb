@@ -121,7 +121,7 @@ parse_asc <- function(dirList, homeDir = "./", overwriteBlinks = FALSE, cutPrevi
             cat("trial,ID,subject,onset,offset,duration,x,y,pupil\n", file = myFixFile)
           }
         }
-        if (thisRow$V3 == "END") # changed from if (thisRow$V3 == "TRIAL_RESULT"); TRIAL_RESULT doesn't always exist
+        if (thisRow$V1 == "END") # changed from if (thisRow$V3 == "TRIAL_RESULT"); TRIAL_RESULT doesn't always exist
         {
           #wrap up trial if it is trial result
           x = suppressWarnings(as.numeric(x))
