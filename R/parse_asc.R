@@ -1,7 +1,7 @@
 #' Take asc files and extract relevant data
 #' Does not merge data with messages for fixation data, obtains sample report and puts time in ms
 #' This code was written by Dr. Holger Mitterer
-#' @param dirList list if asc files
+#' @param dirList list of asc files
 #' @param homeDir directory of edf files
 #' @param overwriteBlinks set to false
 #' @param cutPreview
