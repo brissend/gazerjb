@@ -19,8 +19,9 @@ This package contains functions for reading in raw eye-tracking data, formatting
 # install devtools
 install.packages("devtools")
 
-# install gazer from GitHub
-remotes::install_github("dmirman/gazer")
+# build and install locally
+gazer_build = devtools::build("~/path/to/package/gazerjb")
+devtools::install_local(gazer_build)
 ``` 
 
 # Help
